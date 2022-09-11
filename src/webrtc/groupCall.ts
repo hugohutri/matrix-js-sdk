@@ -253,9 +253,11 @@ export class GroupCall extends TypedEventEmitter<
         this.setState(GroupCallState.InitializingLocalCallFeed);
 
         let stream: MediaStream;
+        let streamNode: MediaStreamAudioSourceNode;
 
         try {
-            stream = await this.client.getMediaHandler().getUserMediaStream(true, this.type === GroupCallType.Video);
+            streamNode = await this.client.getMediaHandler().getUserMediaStreamNode(true, this.type === GroupCallType.Video);
+            stream = streamNode.mediaStream;
         } catch (error) {
             this.setState(GroupCallState.LocalCallFeedUninitialized);
             throw error;
@@ -274,6 +276,7 @@ export class GroupCall extends TypedEventEmitter<
             roomId: this.room.roomId,
             userId,
             stream,
+            streamNode,
             purpose: SDPStreamMetadataPurpose.Usermedia,
             audioMuted: stream.getAudioTracks().length === 0 || this.isPtt,
             videoMuted: stream.getVideoTracks().length === 0,

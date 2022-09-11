@@ -950,7 +950,7 @@ export class MatrixCall extends TypedEventEmitter<CallEvent, CallEventHandlerMap
             this.waitForLocalAVStream = true;
 
             try {
-                const stream = await this.client.getMediaHandler().getUserMediaStream(
+                const streamNode = await this.client.getMediaHandler().getUserMediaStreamNode(
                     answerWithAudio, answerWithVideo,
                 );
                 this.waitForLocalAVStream = false;
@@ -958,7 +958,8 @@ export class MatrixCall extends TypedEventEmitter<CallEvent, CallEventHandlerMap
                     client: this.client,
                     roomId: this.roomId,
                     userId: this.client.getUserId(),
-                    stream,
+                    stream: streamNode.mediaStream,
+                    streamNode,
                     purpose: SDPStreamMetadataPurpose.Usermedia,
                     audioMuted: false,
                     videoMuted: false,
@@ -1082,7 +1083,7 @@ export class MatrixCall extends TypedEventEmitter<CallEvent, CallEventHandlerMap
 
             // updateLocalUsermediaStream() will take the tracks, use them as
             // replacement and throw the stream away, so it isn't reusable
-            const stream = await this.client.getMediaHandler().getUserMediaStream(getAudio, getVideo, false);
+            const stream = await this.client.getMediaHandler().getUserMediaStreamNode(getAudio, getVideo, false).mediaStream;
             await this.updateLocalUsermediaStream(stream, audio, video);
         } catch (error) {
             logger.error(`Call ${this.callId} Failed to upgrade the call`, error);
@@ -2495,18 +2496,19 @@ export class MatrixCall extends TypedEventEmitter<CallEvent, CallEventHandlerMap
         this.setState(CallState.WaitLocalMedia);
 
         try {
-            const stream = await this.client.getMediaHandler().getUserMediaStream(audio, video);
+            const streamNode = await this.client.getMediaHandler().getUserMediaStreamNode(audio, video);
 
             // make sure all the tracks are enabled (same as pushNewLocalFeed -
             // we probably ought to just have one code path for adding streams)
-            setTracksEnabled(stream.getAudioTracks(), true);
-            setTracksEnabled(stream.getVideoTracks(), true);
+            setTracksEnabled(streamNode.mediaStream.getAudioTracks(), true);
+            setTracksEnabled(streamNode.mediaStream.getVideoTracks(), true);
 
             const callFeed = new CallFeed({
                 client: this.client,
                 roomId: this.roomId,
                 userId: this.client.getUserId(),
-                stream,
+                stream: streamNode.mediaStream,
+                streamNode,
                 purpose: SDPStreamMetadataPurpose.Usermedia,
                 audioMuted: false,
                 videoMuted: false,

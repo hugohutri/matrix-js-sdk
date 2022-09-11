@@ -32,6 +32,7 @@ export interface ICallFeedOpts {
     roomId: string;
     userId: string;
     stream: MediaStream;
+    streamNode: MediaStreamAudioSourceNode;
     purpose: SDPStreamMetadataPurpose;
     /**
      * Whether or not the remote SDPStreamMetadata says audio is muted
@@ -69,6 +70,7 @@ type EventHandlerMap = {
 };
 export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> {
     public stream: MediaStream;
+    public streamNode: MediaStreamAudioSourceNode;
     public secondStream: MediaStream;
     public sdpMetadataStreamId: string;
     public userId: string;
@@ -78,6 +80,8 @@ export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> 
     public setVoiceActivityDetectionMute: (muted: boolean) => void;
     public VADEnabled = true;
     public maxVolume = -Infinity;
+    public mediaStreamSourceNode: MediaStreamAudioSourceNode;
+
 
     private client: MatrixClient;
     private roomId: string;

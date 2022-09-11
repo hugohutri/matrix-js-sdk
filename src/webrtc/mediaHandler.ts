@@ -21,6 +21,7 @@ import { TypedEventEmitter } from "../models/typed-event-emitter";
 import { GroupCallType, GroupCallState } from "../webrtc/groupCall";
 import { logger } from "../logger";
 import { MatrixClient } from "../client";
+import { acquireContext } from "./audioContext";
 
 export enum MediaHandlerEvent {
     LocalStreamsChanged = "local_streams_changed"
@@ -126,7 +127,7 @@ export class MediaHandler extends TypedEventEmitter<
             const { audio, video } = callMediaStreamParams.get(call.callId);
 
             logger.log(`mediaHandler updateLocalUsermediaStreams getUserMediaStream call ${call.callId}`);
-            const stream = await this.getUserMediaStream(audio, video);
+            const { mediaStream: stream } = await this.getUserMediaStreamNode(audio, video);
 
             if (call.callHasEnded()) {
                 continue;
@@ -142,7 +143,7 @@ export class MediaHandler extends TypedEventEmitter<
 
             logger.log(`mediaHandler updateLocalUsermediaStreams getUserMediaStream groupCall ${
                 groupCall.groupCallId}`);
-            const stream = await this.getUserMediaStream(
+            const { mediaStream: stream } = await this.getUserMediaStreamNode(
                 true,
                 groupCall.type === GroupCallType.Video,
             );
@@ -171,9 +172,9 @@ export class MediaHandler extends TypedEventEmitter<
      * @param audio should have an audio track
      * @param video should have a video track
      * @param reusable is allowed to be reused by the MediaHandler
-     * @returns {MediaStream} based on passed parameters
+     * @returns {MediaStreamAudioSourceNode} based on passed parameters
      */
-    public async getUserMediaStream(audio: boolean, video: boolean, reusable = true): Promise<MediaStream> {
+    public async getUserMediaStreamNode(audio: boolean, video: boolean, reusable = true): Promise<MediaStreamAudioSourceNode> {
         const shouldRequestAudio = audio && await this.hasAudioDevice();
         const shouldRequestVideo = video && await this.hasVideoDevice();
 
@@ -228,7 +229,8 @@ export class MediaHandler extends TypedEventEmitter<
 
         this.emit(MediaHandlerEvent.LocalStreamsChanged);
 
-        return stream;
+        const audioContext = acquireContext();
+        return audioContext.createMediaStreamSource(stream);
     }
 
     /**
