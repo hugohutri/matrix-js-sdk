@@ -78,6 +78,7 @@ export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> 
     public setVoiceActivityDetectionMute: (muted: boolean) => void;
     public VADEnabled = true;
     public maxVolume = -Infinity;
+    public mediaStreamAudioSourceNode: MediaStreamAudioSourceNode;
 
     private client: MatrixClient;
     private roomId: string;
@@ -92,6 +93,9 @@ export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> 
     private speakingThreshold = SPEAKING_THRESHOLD;
     private speaking = false;
     private volumeLooperTimeout: ReturnType<typeof setTimeout>;
+    private audioDelay: DelayNode;
+
+
     /**
      * Cooldown for voice activity detection, so that we don't mute immediately when the user stops speaking
      * But when he has been silent 200ms
@@ -161,10 +165,16 @@ export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> 
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 512;
         this.analyser.smoothingTimeConstant = 0.1;
+        this.audioDelay = this.audioContext.createDelay(5.0);
 
         this.secondStream = this.stream.clone();
-        const mediaStreamAudioSourceNode = this.audioContext.createMediaStreamSource(this.secondStream);
-        mediaStreamAudioSourceNode.connect(this.analyser);
+
+        const secondMediaStreamAudioSourceNode = this.audioContext.createMediaStreamSource(this.secondStream);
+        this.mediaStreamAudioSourceNode = this.audioContext.createMediaStreamSource(this.stream);
+        secondMediaStreamAudioSourceNode.connect(this.analyser);
+        this.mediaStreamAudioSourceNode.connect(this.audioDelay);
+
+        this.audioDelay.connect(this.audioContext.destination);
 
         this.frequencyBinCount = new Float32Array(this.analyser.frequencyBinCount);
     }
@@ -196,7 +206,7 @@ export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> 
      * @returns {boolean} is audio muted?
      */
     public isAudioMuted(): boolean {
-        return this.stream.getAudioTracks().length === 0 || this.audioMuted;
+        return this.mediaStreamAudioSourceNode.mediaStream.getAudioTracks().length === 0 || this.audioMuted;
     }
 
     /**
@@ -206,7 +216,7 @@ export class CallFeed extends TypedEventEmitter<CallFeedEvent, EventHandlerMap> 
      */
     public isVideoMuted(): boolean {
         // We assume only one video track
-        return this.stream.getVideoTracks().length === 0 || this.videoMuted;
+        return this.mediaStreamAudioSourceNode.mediaStream.getVideoTracks().length === 0 || this.videoMuted;
     }
 
     public isSpeaking(): boolean {

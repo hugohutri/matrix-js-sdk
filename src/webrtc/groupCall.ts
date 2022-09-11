@@ -486,13 +486,13 @@ export class GroupCall extends TypedEventEmitter<
 
         if (this.localCallFeed) {
             logger.log(`groupCall ${this.groupCallId} setMicrophoneMuted stream ${
-                this.localCallFeed.stream.id} muted ${muted}`);
+                this.localCallFeed.mediaStreamAudioSourceNode.mediaStream.id} muted ${muted}`);
             this.localCallFeed.setAudioVideoMuted(muted, null);
             // I don't believe its actually necessary to enable these tracks: they
             // are the one on the groupcall's own CallFeed and are cloned before being
             // given to any of the actual calls, so these tracks don't actually go
             // anywhere. Let's do it anyway to avoid confusion.
-            setTracksEnabled(this.localCallFeed.stream.getAudioTracks(), !muted);
+            setTracksEnabled(this.localCallFeed.mediaStreamAudioSourceNode.mediaStream.getAudioTracks(), !muted);
 
             // Disable voice activity detection when user has muted their microphone
             // (This can't happen when push-to-talk is enabled)
@@ -502,7 +502,7 @@ export class GroupCall extends TypedEventEmitter<
         }
 
         for (const call of this.calls) {
-            setTracksEnabled(call.localUsermediaFeed.stream.getAudioTracks(), !muted);
+            setTracksEnabled(call.localUsermediaFeed.mediaStreamAudioSourceNode.mediaStream.getAudioTracks(), !muted);
         }
 
         if (!sendUpdatesBefore) {
@@ -532,11 +532,11 @@ export class GroupCall extends TypedEventEmitter<
         if (this.localCallFeed) {
             this.localCallFeed.setVoiceActivityDetectionMuteLocal(muted, null);
 
-            setTracksEnabled(this.localCallFeed.stream.getAudioTracks(), !muted);
+            setTracksEnabled(this.localCallFeed.mediaStreamAudioSourceNode.mediaStream.getAudioTracks(), !muted);
         }
 
         for (const call of this.calls) {
-            setTracksEnabled(call.localUsermediaFeed.stream.getAudioTracks(), !muted);
+            setTracksEnabled(call.localUsermediaFeed.mediaStreamAudioSourceNode.mediaStream.getAudioTracks(), !muted);
         }
 
         return true;
@@ -557,9 +557,9 @@ export class GroupCall extends TypedEventEmitter<
 
         if (this.localCallFeed) {
             logger.log(`groupCall ${this.groupCallId} setLocalVideoMuted stream ${
-                this.localCallFeed.stream.id} muted ${muted}`);
+                this.localCallFeed.mediaStreamAudioSourceNode.mediaStream.id} muted ${muted}`);
             this.localCallFeed.setAudioVideoMuted(null, muted);
-            setTracksEnabled(this.localCallFeed.stream.getVideoTracks(), !muted);
+            setTracksEnabled(this.localCallFeed.mediaStreamAudioSourceNode.mediaStream.getVideoTracks(), !muted);
         }
 
         for (const call of this.calls) {
